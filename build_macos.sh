@@ -37,13 +37,22 @@ codesign --force --deep --sign - openxcom.app
 mv /Applications/openxcom.app /Applications/openxcom_old.app 
 mv openxcom.app /Applications
 
-### 5. Clear environment
+### 5. Clean environment
+### sources
+cd ../..
+rm -rf ./OpenXcom
 
-###remove sources
-#cd ../..
-#rm -rf ./OpenXcom
+### remove developer software
+read -q "REPLY?Remove HomeBrew and free 1Gb? (y/n) "
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+    echo "Self-removing /opt/homebrew"
+    sudo rm -r /opt/homebrew
+fi
 
-#remove developer software
-#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
-#sudo rm -r /opt/homebrew
-#sudo rm -r /Library/Developer/CommandLineTools
+read -q "Remove CommandLineTools and free 4Gb? (y/n) "
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    sudo rm -r /Library/Developer/CommandLineTools
+fi
+echo
