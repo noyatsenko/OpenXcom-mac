@@ -1,4 +1,5 @@
 #x86_64 on arm (God bless Rozetta)
+#softwareupdate --install-rosetta --agree-to-license
 #arch -x86_64 zsh
 
 ### 0. Install developer software
