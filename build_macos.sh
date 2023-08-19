@@ -1,7 +1,12 @@
 ### 0. Install developer software
 echo "Installing HomeBrew & CommandLineTools"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/opt/homebrew/bin/brew shellenv)"
+
+if [[ $CPUTYPE == arm64 ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+else
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
 
 ### 1. Prepare environment
 
@@ -26,6 +31,7 @@ cp $libSDL2/lib/libSDL2-2.0.0.dylib openxcom.app/Contents/Frameworks
 
 make -j4
 codesign --force --deep --sign - openxcom.app
+mv /Applications/openxcom.app /Applications/openxcom_old.app 
 mv openxcom.app /Applications
 
 ### 5. Clear environment
