@@ -1,3 +1,6 @@
+#x86_64 on arm (God bless Rozetta)
+#arch -x86_64 zsh
+
 ### 0. Install developer software
 echo "Installing HomeBrew & CommandLineTools"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
