@@ -44,6 +44,7 @@ rm -rf ./OpenXcom
 
 ### remove developer software
 read -q "REPLY?Remove HomeBrew and free 1Gb? (y/n) "
+read -p "Remove HomeBrew and free 1Gb? (y/n)" -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
@@ -51,7 +52,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo rm -r /opt/homebrew
 fi
 
-read -q "Remove CommandLineTools and free 4Gb? (y/n) "
+read -p "Remove CommandLineTools and free 4Gb? (y/n)" -n 1 -r
+read -q "REPLY?Remove CommandLineTools and free 4Gb? (y/n) "
+echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo rm -r /Library/Developer/CommandLineTools
 fi
