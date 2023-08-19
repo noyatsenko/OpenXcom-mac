@@ -52,8 +52,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo rm -r /opt/homebrew
 fi
 
-read -p "Remove CommandLineTools and free 4Gb? (y/n)" -n 1 -r
 read -q "REPLY?Remove CommandLineTools and free 4Gb? (y/n) "
+read -p "Remove CommandLineTools and free 4Gb? (y/n)" -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo rm -r /Library/Developer/CommandLineTools
