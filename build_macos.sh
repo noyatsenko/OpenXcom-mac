@@ -22,9 +22,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 ### 2. Update post-build config OpenXcom/cmake/modules/PostprocessBundle.cmake for link HomeBrew libs
 
-BREWDIR=`brew config | grep HOMEBREW_PREFIX | awk '{print $2}'`
 FIND='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "")'
-REPLACE='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "'$BREWDIR'/lib")'
+REPLACE='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "'$(brew --prefix)'/lib")'
 sed -i '' "s,$FIND,$REPLACE," ../cmake/modules/PostprocessBundle.cmake 
 
 ### 3. Copy SDL2 to bundle
@@ -52,7 +51,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
     echo "Clean HomeBrew data"
     sudo rm -r /opt/homebrew
-    sudo rm -r /var/local/homebrew
+    sudo rm -r /usr/local/homebrew
 fi
 
 read -q "REPLY?Remove CommandLineTools and free 4Gb? (y/n) "
