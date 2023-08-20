@@ -50,7 +50,7 @@ read -p "Remove HomeBrew and free 1Gb? (y/n)" -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
-    echo "Self-removing /opt/homebrew"
+    echo "Clean HomeBrew data"
     sudo rm -r /opt/homebrew
 fi
 
