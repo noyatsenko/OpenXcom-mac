@@ -52,6 +52,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
     echo "Clean HomeBrew data"
     sudo rm -r /opt/homebrew
+    sudo rm -r /var/local/homebrew
 fi
 
 read -q "REPLY?Remove CommandLineTools and free 4Gb? (y/n) "
