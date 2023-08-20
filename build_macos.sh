@@ -14,8 +14,8 @@ fi
 
 ### 1. Prepare environment
 
-brew install cmake pkg-config sdl12-compat sdl_image sdl_gfx sdl_mixer yaml-cpp doxygen
 brew install curl
+brew install cmake pkg-config sdl12-compat sdl_image sdl_gfx sdl_mixer yaml-cpp doxygen
 git clone https://github.com/MeridianOXC/OpenXcom.git
 mkdir OpenXcom/build && cd OpenXcom/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
