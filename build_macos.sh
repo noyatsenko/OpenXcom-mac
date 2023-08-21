@@ -36,6 +36,7 @@ cp $libSDL2/lib/libSDL2-2.0.0.dylib openxcom.app/Contents/Frameworks
 ### 4. Make and install
 
 make -j4
+#fix SDL distibute
 sudo xattr -cr openxcom.app
 codesign --force --deep --sign - openxcom.app
 mv /Applications/openxcom.app /Applications/openxcom_old.app 
