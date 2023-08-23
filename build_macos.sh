@@ -22,7 +22,7 @@ git clone https://github.com/MeridianOXC/OpenXcom.git
 mkdir OpenXcom/build && cd OpenXcom/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 
-### 2. Update post-build config OpenXcom/cmake/modules/PostprocessBundle.cmake for link HomeBrew libs
+### 2. Link HomeBrew libs in OpenXcom/cmake/modules/PostprocessBundle.cmake 
 
 FIND='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "")'
 REPLACE='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "'$(brew --prefix)'/lib")'
@@ -36,7 +36,7 @@ cp $libSDL2/lib/libSDL2-2.0.0.dylib openxcom.app/Contents/Frameworks
 ### 4. Make and install
 
 make -j4
-#fix SDL distibute
+#fix SDL distribute
 sudo xattr -cr openxcom.app
 codesign --force --deep --sign - openxcom.app
 mv /Applications/openxcom.app /Applications/openxcom_old.app 
