@@ -6,10 +6,10 @@
 echo "Installing HomeBrew & CommandLineTools"
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-if [[ $CPUTYPE == arm64 ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+if [[ `uname -p` == arm ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
 else
-  eval "$(/usr/local/bin/brew shellenv)"
+    eval "$(/usr/local/bin/brew shellenv)"
 fi
 
 ### 1. Prepare environment
