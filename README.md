@@ -14,7 +14,7 @@ Uses modified code from SDL\_gfx (LGPL) with permission from author.
 
 ## Build
 ```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/noyatsenko/OpenXcom-mac/oxce-plus/build_macos.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/noyatsenko/OpenXcom-mac/oxce-plus/deploy_macos.sh)"
 ```
 
 ## Installation
