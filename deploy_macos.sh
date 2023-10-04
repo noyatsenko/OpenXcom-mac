@@ -25,9 +25,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 ### 2. Link HomeBrew libs in OpenXcom/cmake/modules/PostprocessBundle.cmake 
 
-FIND='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "")'
-REPLACE='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "'$(brew --prefix)'/lib")'
-sed -i '' "s,$FIND,$REPLACE," ../cmake/modules/PostprocessBundle.cmake 
+#FIND='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "")'
+#REPLACE='fixup_bundle("${BUNDLE_PATH}" "${BUNDLE_LIBS}" "'$(brew --prefix)'/lib")'
+#sed -i '' "s,$FIND,$REPLACE," ../cmake/modules/PostprocessBundle.cmake 
 
 ### 3. Copy SDL2 to bundle
 mkdir -p openxcom.app/Contents/Frameworks/
