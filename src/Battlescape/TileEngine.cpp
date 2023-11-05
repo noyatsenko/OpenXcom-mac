@@ -1707,37 +1707,41 @@ namespace
  * @param tile Target tile that is look at
  * @param currentUnit Unit that look on tile or unit
  * @param targetUnit Unit that is look at
- * @return Tuple of get<0>: effective visible distance that consider camouflage and shade, get<1>: max unit visibility distance in tiles
+ * @return Tuple of get<0>: effective visible distance that consider camouflage and shade, get<1>: max unit visibility distance in tiles independent of target darkness
  */
 std::tuple<int, int> getVisibleDistanceMaxHelper(TileEngine* te, const Tile* tile, const BattleUnit* currentUnit, const BattleUnit *targetUnit)
 {
-	// global max distance, independent of unit
-	const int visibleDistanceGlobalMaxVoxel = te->getMaxVoxelViewDistance();
-	// max distance, affected by target unit too
-	int visibleDistanceMaxVoxel = visibleDistanceGlobalMaxVoxel;
-
-	// unit max distance, only affected by current unit
-	int visibleDistanceUnitMaxTile = std::min(
-		te->getMaxViewDistance(),
-		std::max(
-			currentUnit->getMaxViewDistanceAtDark(nullptr),
-			currentUnit->getMaxViewDistanceAtDay(nullptr)
-		)
-	);
-
+	bool targetIsDark = tile->getShade() > te->getMaxDarknessToSeeUnits();
 	bool targetOnFire = (targetUnit && targetUnit->getFire() > 0);
 	if (targetOnFire)
 	{
 		// Note: fire cancels enemy's camouflage
 		targetUnit = nullptr;
+		targetIsDark = false;
 	}
 
+	const int viewDistanceAtDarkTiles = currentUnit->getMaxViewDistanceAtDark(targetUnit);
+	const int viewDistanceAtDayTiles = currentUnit->getMaxViewDistanceAtDay(targetUnit);
+
+	// global max distance, independent of unit
+	const int visibleDistanceGlobalMaxVoxel = te->getMaxVoxelViewDistance();
+	// max distance, affected by target unit too
+	int visibleDistanceMaxVoxel = visibleDistanceGlobalMaxVoxel;
+	// unit max distance, mix of dark and day range
+	int visibleDistanceUnitMaxTile = std::min(
+		te->getMaxViewDistance(),
+		std::max(
+			viewDistanceAtDarkTiles,
+			viewDistanceAtDayTiles
+		)
+	);
+
 	// during dark aliens can see 20 tiles, xcom can see 9 by default... unless overridden by armor
-	if (tile->getShade() > te->getMaxDarknessToSeeUnits() && !targetOnFire)
+	if (targetIsDark)
 	{
 		visibleDistanceMaxVoxel = std::min(
 			visibleDistanceGlobalMaxVoxel,
-			currentUnit->getMaxViewDistanceAtDark(targetUnit) * 16
+			viewDistanceAtDarkTiles * Position::TileXY
 		);
 	}
 	// during day (or if enough other light) both see 20 tiles ... unless overridden by armor
@@ -1745,9 +1749,12 @@ std::tuple<int, int> getVisibleDistanceMaxHelper(TileEngine* te, const Tile* til
 	{
 		visibleDistanceMaxVoxel = std::min(
 			visibleDistanceGlobalMaxVoxel,
-			currentUnit->getMaxViewDistanceAtDay(targetUnit) * 16
+			viewDistanceAtDayTiles * Position::TileXY
 		);
 	}
+
+	// small buffer that allow for very short visibility distance still work in smoke or some diagonal directions still be visible
+	visibleDistanceMaxVoxel += Position::TileXY / 4;
 
 	return std::make_tuple(visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile);
 }
@@ -1872,9 +1879,9 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 		// 20 - maximum view distance in vanilla Xcom.
 		// 100 - % for smokeDensityFactor.
 		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
-		int visibilityQuality = visibleDistanceMaxVoxel - (int)visibleDistanceVoxels - (densityOfSmoke * smokeDensityFactor + densityOfFire * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - (densityOfSmoke * smokeDensityFactor + densityOfFire * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
-		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), (int)visibleDistanceVoxels, visibleDistanceMaxVoxel, (int)densityOfSmoke, (int)densityOfFire };
+		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), visibleDistanceVoxels, visibleDistanceMaxVoxel, densityOfSmoke, densityOfFire };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
 		unitSeen = 0 < arg.getFirst();
 	}
@@ -2043,7 +2050,7 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
 		// 20 - maximum view distance in vanilla Xcom.
 		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
-		int visibilityQuality = visibleDistanceMaxVoxel - (int)visibleDistanceVoxels - densityOfSmoke * visibleDistanceUnitMaxTile/(3 * 20);
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - densityOfSmoke * visibleDistanceUnitMaxTile/(3 * 20);
 		seen = 0 < visibilityQuality;
 	}
 	return seen;
