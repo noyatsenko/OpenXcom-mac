@@ -4709,9 +4709,12 @@ void BattleUnit::adjustStats(const StatAdjustment &adjustment)
 	_stats += UnitStats::percent(_stats, adjustment.statGrowth, adjustment.growthMultiplier);
 
 	_stats.firing *= adjustment.aimMultiplier;
+	_stats += adjustment.statGrowthAbs;
+
 	for (int i = 0; i < SIDE_MAX; ++i)
 	{
 		_maxArmor[i] *= adjustment.armorMultiplier;
+		_maxArmor[i] += adjustment.armorMultiplierAbs;
 		_currentArmor[i] = _maxArmor[i];
 	}
 
@@ -6169,8 +6172,9 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getVisible>("isVisible");
 	bu.add<&makeVisibleScript>("makeVisible");
-	bu.add<&BattleUnit::getMaxViewDistanceAtDark>("getMaxViewDistanceAtDark", "get maximum visibility distance in tiles of another unit at dark");
-	bu.add<&BattleUnit::getMaxViewDistanceAtDay>("getMaxViewDistanceAtDay", "get maximum visibility distance in tiles of another unit at day");
+	bu.add<&BattleUnit::getMaxViewDistanceAtDark>("getMaxViewDistanceAtDark", "get maximum visibility distance in tiles to another unit at dark");
+	bu.add<&BattleUnit::getMaxViewDistanceAtDay>("getMaxViewDistanceAtDay", "get maximum visibility distance in tiles to another unit at day");
+	bu.add<&BattleUnit::getMaxViewDistance>("getMaxViewDistance", "calculate maximum visibility distance consider camouflage, first arg is base visibility, second arg is cammo reduction, third arg is anti-cammo boost");
 
 
 	bu.add<&setSpawnUnitScript>("setSpawnUnit", "set type of zombie will be spawn from current unit, it will reset everything to default (hostile & instant)");
@@ -6499,7 +6503,15 @@ ModScript::ReactionUnitParser::ReactionUnitParser(ScriptGlobal* shared, const st
 /**
  * Constructor of visibility script parser.
  */
-ModScript::VisibilityUnitParser::VisibilityUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name, "current_visibility", "default_visibility", "visibility_mode", "observer_unit", "target_unit", "distance", "distance_max", "smoke_density", "fire_density", }
+ModScript::VisibilityUnitParser::VisibilityUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"current_visibility",
+	"default_visibility",
+	"visibility_mode",
+
+	"observer_unit", "target_unit", "target_tile",
+	"distance", "distance_max", "distance_target_max",
+	"smoke_density", "fire_density",
+	"smoke_density_near_observer", "fire_density_near_observer" }
 {
 	BindBase b { this };
 
