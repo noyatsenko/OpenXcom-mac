@@ -12,6 +12,11 @@ and the [wiki](https://www.ufopaedia.org/index.php/OpenXcom).
 
 Uses modified code from SDL\_gfx (LGPL) with permission from author.
 
+## Autobuild MacOS
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/noyatsenko/OpenXcom-mac/oxce-plus/deploy_macos.sh)"
+```
+
 ## Installation
 
 OpenXcom requires a vanilla copy of the X-COM resources -- from either or both
