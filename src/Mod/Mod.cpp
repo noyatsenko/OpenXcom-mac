@@ -4730,10 +4730,6 @@ const std::vector<StatString *> &Mod::getStatStrings() const
 template <typename T>
 struct compareRule
 {
-	typedef const std::string& first_argument_type;
-	typedef const std::string& second_argument_type;
-	typedef bool result_type;
-
 	Mod *_mod;
 	typedef T*(Mod::*RuleLookup)(const std::string &id, bool error) const;
 	RuleLookup _lookup;
@@ -4756,10 +4752,6 @@ struct compareRule
 template <>
 struct compareRule<RuleCraftWeapon>
 {
-	typedef const std::string& first_argument_type;
-	typedef const std::string& second_argument_type;
-	typedef bool result_type;
-
 	Mod *_mod;
 
 	compareRule(Mod *mod) : _mod(mod)
@@ -4781,10 +4773,6 @@ struct compareRule<RuleCraftWeapon>
 template <>
 struct compareRule<Armor>
 {
-	typedef const std::string& first_argument_type;
-	typedef const std::string& second_argument_type;
-	typedef bool result_type;
-
 	Mod *_mod;
 
 	compareRule(Mod *mod) : _mod(mod)
@@ -4819,10 +4807,6 @@ struct compareRule<Armor>
 template <>
 struct compareRule<ArticleDefinition>
 {
-	typedef const std::string& first_argument_type;
-	typedef const std::string& second_argument_type;
-	typedef bool result_type;
-
 	Mod *_mod;
 	const std::map<std::string, int> &_sections;
 
@@ -4846,10 +4830,6 @@ struct compareRule<ArticleDefinition>
  */
 struct compareSection
 {
-	typedef const std::string& first_argument_type;
-	typedef const std::string& second_argument_type;
-	typedef bool result_type;
-
 	Mod *_mod;
 	const std::map<std::string, int> &_sections;
 
@@ -5140,7 +5120,7 @@ RuleBaseFacility *Mod::getDestroyedFacility() const
 		return 0;
 
 	auto* temp = getBaseFacility(_destroyedFacility, true);
-	if (temp->getSize() != 1)
+	if (!temp->isSmall())
 	{
 		throw Exception("Destroyed base facility definition must have size: 1");
 	}
