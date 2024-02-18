@@ -14,9 +14,14 @@ fi
 
 ### 1. Prepare environment
 
+# sdl_image and sdl_mixer now disabled in upstream
+brew tap --force homebrew/core
+brew edit sdl_image # rm disable!
+brew edit sdl_mixer # rm disable!
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install sdl_image sdl_mixer
+
 # Mojave compatibility
 brew install curl
-
 brew install cmake pkg-config sdl12-compat sdl_image sdl_gfx sdl_mixer yaml-cpp doxygen
 
 cd ~
