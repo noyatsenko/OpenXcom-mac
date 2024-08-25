@@ -692,6 +692,8 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
+	loadTemplates(doc, mod);
+
 	for (YAML::const_iterator i = doc["missionStatistics"].begin(); i != doc["missionStatistics"].end(); ++i)
 	{
 		MissionStatistics *ms = new MissionStatistics();
@@ -1604,15 +1606,6 @@ void SavedGame::addFinishedResearchSimple(const RuleResearch * research)
  */
 void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * mod, Base * base, bool score)
 {
-	// process "re-enables"
-	for (const auto* ree : research->getReenabled())
-	{
-		if (isResearchRuleStatusDisabled(ree->getName()))
-		{
-			setResearchRuleStatus(ree->getName(), RuleResearch::RESEARCH_STATUS_NEW); // reset status
-		}
-	}
-
 	if (isResearchRuleStatusDisabled(research->getName()))
 	{
 		return;
@@ -1663,6 +1656,15 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			if (!hasUndiscoveredProtectedUnlocks)
 			{
 				checkRelatedZeroCostTopics = false;
+			}
+		}
+
+		// process "re-enables": https://openxcom.org/forum/index.php?topic=12071.0
+		for (const auto* ree : currentQueueItem->getReenabled())
+		{
+			if (isResearchRuleStatusDisabled(ree->getName()))
+			{
+				setResearchRuleStatus(ree->getName(), RuleResearch::RESEARCH_STATUS_NEW); // reset status
 			}
 		}
 
