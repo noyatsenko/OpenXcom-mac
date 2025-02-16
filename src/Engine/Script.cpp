@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sstream>
 #include <iomanip>
 #include <tuple>
 #include <algorithm>
@@ -694,16 +693,12 @@ public:
 	{
 		if (getType() == TokenNumber)
 		{
-			auto str = toString();
-			int value = 0;
-			size_t offset = 0;
-			std::stringstream ss(str);
-			if (str[0] == '-' || str[0] == '+')
-				offset = 1;
-			if (str.size() > 2 + offset && str[offset] == '0' && (str[offset + 1] == 'x' || str[offset + 1] == 'X'))
-				ss >> std::hex;
-			if ((ss >> value))
-				return ScriptRefData{ *this, ArgInt, value };
+			c4::csubstr str(this->begin(), this->end());
+			if (str.begins_with('+'))
+				str = str.sub(1);
+			int val = 0;
+			if (c4::from_chars(str, &val))
+				return ScriptRefData{*this, ArgInt, val};
 		}
 		else if (getType() == TokenSymbol)
 		{
@@ -1022,7 +1017,7 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 	static constexpr CharClasses CC_digitHex = 0x8;
 	static constexpr CharClasses CC_charRest = 0x10;
 	static constexpr CharClasses CC_digitSign = 0x20;
-	static constexpr CharClasses CC_digitHexX = 0x40;
+	static constexpr CharClasses CC_digitPrefix = 0x40;
 	static constexpr CharClasses CC_quote = 0x80;
 
 	static constexpr Array charDecoder = (
@@ -1038,7 +1033,10 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 				if (i >= '0' && i <= '9')	r[i] |= CC_digit;
 				if (i >= 'A' && i <= 'F')	r[i] |= CC_digitHex;
 				if (i >= 'a' && i <= 'f')	r[i] |= CC_digitHex;
-				if (i == 'x' || i == 'X')	r[i] |= CC_digitHexX;
+
+				if (i == 'x' || i == 'X')	r[i] |= CC_digitPrefix;
+				if (i == 'b' || i == 'B')	r[i] |= CC_digitPrefix;
+				if (i == 'o' || i == 'O')	r[i] |= CC_digitPrefix;
 
 				if (i >= 'A' && i <= 'Z')	r[i] |= CC_charRest;
 				if (i >= 'a' && i <= 'z')	r[i] |= CC_charRest;
@@ -1056,7 +1054,7 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 		CharClasses decode;
 
 		/// Is valid symbol
-		operator bool() const { return c; }
+		explicit operator bool() const { return c; }
 
 		/// Check type of symbol
 		bool is(CharClasses t) const { return decode & t; }
@@ -1222,10 +1220,13 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 		}
 		if (firstDigit.is(CC_digit))
 		{
-			const auto hex = firstDigit.c == '0' && peekCharacter().is(CC_digitHexX);
-			if (hex)
+			const auto prefix = peekCharacter();
+			const auto havePrefix = firstDigit.c == '0' && prefix.is(CC_digitPrefix);
+			const auto hex = havePrefix && (prefix.c == 'x' || prefix.c == 'X');
+
+			if (havePrefix)
 			{
-				//eat `x`
+				//eat `x` or `o` or `b`
 				readCharacter();
 			}
 			else
@@ -2649,8 +2650,10 @@ bool parseDummy(const ScriptProcData& spd, ParserWriter& ph, const ScriptRefData
 template<typename R>
 void addSortHelper(std::vector<R>& vec, R value)
 {
-	vec.push_back(value);
-	std::sort(vec.begin(), vec.end(), [](const R& a, const R& b) { return ScriptRef::compare(a.name, b.name) < 0; });
+	// skip some early allocations that will be overridden right after
+	if (vec.capacity() == 0)
+		vec.reserve(100);
+	vec.insert(std::partition_point(vec.begin(), vec.end(), [&](const R& a) { return ScriptRef::compare(a.name, value.name) <= 0; }), value);
 }
 
 template<bool upper, typename R>
@@ -4640,7 +4643,7 @@ void ScriptGlobal::load(const YAML::YamlNodeReader& reader)
 
 
 
-#ifdef OXCE_AUTO_TEST
+#ifndef NDEBUG
 
 namespace
 {
@@ -4784,11 +4787,20 @@ void dummyFunctionClass(const DummyClass* c)
 
 }
 
+struct TestEnv
+{
+	ScriptGlobal g = { };
+	ScriptParserTest f = { &g };
+	ScriptContainerBase tempScript = { };
+	ParserWriter help = { 0, tempScript, f };
+};
+
+
 [[maybe_unused]]
 static auto dummyTestScriptFunctionParser = ([]
 {
-	ScriptGlobal g;
-	ScriptParserTest f(&g);
+	TestEnv env;
+	ScriptParserTest& f = env.f;
 
 	f.addType<DummyClass*>("DummyClass");
 
@@ -4798,12 +4810,7 @@ static auto dummyTestScriptFunctionParser = ([]
 	bind.add<&dummyFunctionClass>("test3");
 
 
-	ScriptContainerBase tempScript;
-	ParserWriter help(
-		0,
-		tempScript,
-		f
-	);
+	ParserWriter& help = env.help;
 	help.addReg<DummyClass*&>(ScriptRef{"foo"});
 	help.addReg<DummyClass*&>(ScriptRef{"bar.a"});
 	help.addReg<DummyClass*&>(ScriptRef{"bar.b"});
@@ -4951,8 +4958,8 @@ void dummyFunctionSeperator3(int& i, int& j, int& k, ScriptArgSeparator)
 [[maybe_unused]]
 static auto dummyTestScriptOverloadSeperator = ([]
 {
-	ScriptGlobal g;
-	ScriptParserTest f(&g);
+	TestEnv env;
+	ScriptParserTest& f = env.f;
 
 	Bind<DummyClass> bind{ &f };
 	bind.addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(&dummyFunctionSeperator0)>>("funcSep");
@@ -4961,12 +4968,7 @@ static auto dummyTestScriptOverloadSeperator = ([]
 	bind.addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(&dummyFunctionSeperator3)>>("funcSep");
 
 
-	ScriptContainerBase tempScript;
-	ParserWriter help(
-		0,
-		tempScript,
-		f
-	);
+	ParserWriter& help = env.help;
 	auto arg_x = help.addReg<int&>(ScriptRef{"x"});
 	auto arg_y = help.addReg<int&>(ScriptRef{"y"});
 	auto arg_z = help.addReg<int&>(ScriptRef{"z"});
@@ -5054,14 +5056,55 @@ static auto dummyTestScriptRefTokens = ([]
 	}
 
 	{
-		ScriptRefTokens srt{"0x10 1234"};
+		TestEnv env;
+		ScriptRefTokens srt{"0x10 1234 0b100 0o10 0x0f 0xAb"};
 		{
 			SelectedToken next = srt.getNextToken();
 			assert(next == ScriptRef{"0x10"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 0x10);
 		}
 		{
 			SelectedToken next = srt.getNextToken();
 			assert(next == ScriptRef{"1234"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 1234);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0b100"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 4);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0o10"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 8);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0x0f"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 15);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0xAb"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 0xAB);
 		}
 		{
 			SelectedToken next = srt.getNextToken();
