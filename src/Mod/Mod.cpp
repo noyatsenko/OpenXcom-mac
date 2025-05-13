@@ -428,6 +428,7 @@ Mod::Mod() :
 	_kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
 	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0),
 	_noLOSAccuracyPenaltyGlobal(-1),
+	_explodeInventoryGlobal(0),
 	_surrenderMode(0),
 	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
 	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
@@ -798,6 +799,10 @@ Mod::~Mod()
 		delete pair.second;
 	}
 	for (auto& pair : _missionScripts)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _adhocScripts)
 	{
 		delete pair.second;
 	}
@@ -2501,7 +2506,8 @@ void Mod::loadMod(const std::vector<FileMap::FileRecord> &rulesetFiles, ModScrip
 	// short of knowing the results of calls to the RNG before they're determined.
 	// the best solution i can come up with is to disallow it, as there are other ways to achieve what this would amount to anyway,
 	// and they don't require time travel. - Warboy
-	for (auto& pair : _missionScripts)
+	for (auto& map : { _missionScripts, _adhocScripts })
+	for (auto& pair : map)
 	{
 		RuleMissionScript *rule = pair.second;
 		std::set<std::string> missions = rule->getAllMissionTypes();
@@ -3028,6 +3034,14 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 			rule->load(ruleReader);
 		}
 	}
+	for (const auto& ruleReader : iterateRules("adhocScripts", "type"))
+	{
+		RuleMissionScript* rule = loadRule(ruleReader, &_adhocScripts, &_adhocScriptIndex, "type");
+		if (rule != 0)
+		{
+			rule->load(ruleReader);
+		}
+	}
 
 
 
@@ -3183,6 +3197,12 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		nodeAI.tryRead("destroyBaseFacilities", _aiDestroyBaseFacilities);
 		nodeAI.tryRead("pickUpWeaponsMoreActively", _aiPickUpWeaponsMoreActively);
 		nodeAI.tryRead("pickUpWeaponsMoreActivelyCiv", _aiPickUpWeaponsMoreActivelyCiv);
+
+		nodeAI.tryRead("targetWeightThreatThreshold", _aiTargetWeightThreatThreshold);
+		nodeAI.tryRead("targetWeightAsHostile", _aiTargetWeightAsHostile);
+		nodeAI.tryRead("targetWeightAsHostileCivilians", _aiTargetWeightAsHostileCivilians);
+		nodeAI.tryRead("targetWeightAsFriendly", _aiTargetWeightAsFriendly);
+		nodeAI.tryRead("targetWeightAsNeutral", _aiTargetWeightAsNeutral);
 	}
 	reader.tryRead("maxLookVariant", _maxLookVariant);
 	reader.tryRead("tooMuchSmokeThreshold", _tooMuchSmokeThreshold);
@@ -3202,6 +3222,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	reader.tryRead("closeQuartersEnergyCostGlobal", _closeQuartersEnergyCostGlobal);
 	reader.tryRead("closeQuartersSneakUpGlobal", _closeQuartersSneakUpGlobal);
 	reader.tryRead("noLOSAccuracyPenaltyGlobal", _noLOSAccuracyPenaltyGlobal);
+	reader.tryRead("explodeInventoryGlobal", _explodeInventoryGlobal);
 	reader.tryRead("surrenderMode", _surrenderMode);
 	reader.tryRead("bughuntMinTurn", _bughuntMinTurn);
 	reader.tryRead("bughuntMaxEnemies", _bughuntMaxEnemies);
@@ -5190,10 +5211,21 @@ const std::vector<std::string> *Mod::getMissionScriptList() const
 	return &_missionScriptIndex;
 }
 
+const std::vector<std::string> *Mod::getAdhocScriptList() const
+{
+	return &_adhocScriptIndex;
+}
+
 RuleMissionScript *Mod::getMissionScript(const std::string &name, bool error) const
 {
 	return getRule(name, "Mission Script", _missionScripts, error);
 }
+
+RuleMissionScript *Mod::getAdhocScript(const std::string &name, bool error) const
+{
+	return getRule(name, "Adhoc Script", _adhocScripts, error);
+}
+
 /// Get global script data.
 ScriptGlobal *Mod::getScriptGlobal() const
 {
