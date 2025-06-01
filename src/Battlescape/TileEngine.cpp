@@ -1889,10 +1889,9 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 	Position scanVoxel;
 	bool unitSeen = canTargetUnit(&originVoxel, tile, &scanVoxel, currentUnit, false);
 
-	// heat vision should be blind by looking directly through fire
-	int fireDensityFactor = Clamp(currentUnit->getHeatVision(), 0, 100);
 	// heat vision 100% = smoke effectiveness 0%
-	int smokeDensityFactor = 100 - fireDensityFactor;
+	int smokeDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughSmoke(), 0, 100);
+	int fireDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughFire(), 0, 100);
 
 	if (unitSeen)
 	{
@@ -2069,9 +2068,8 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 	originVoxel = getSightOriginVoxel(currentUnit);
 
 	// heat vision 100% = smoke effectiveness 0%
-	int smokeDensityFactor = 100 - currentUnit->getArmor()->getHeatVision();
-	// heat vision should be blind by looking directly through fire
-	int fireDensityFactor = currentUnit->getArmor()->getHeatVision();
+	int smokeDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughSmoke(), 0, 100);
+	int fireDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughFire(), 0, 100);
 
 	if (seen)
 	{
@@ -2616,7 +2614,8 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 					ReactionScore rs = determineReactionType(bu, unit);
 					if (rs.attackType != BA_NONE)
 					{
-						if (rs.attackType == BA_SNAPSHOT && Options::battleUFOExtenderAccuracy)
+						int reactionFireThreshold = _save->getBattleGame()->getMod()->getReactionFireThreshold(bu->getFaction());
+						if (reactionFireThreshold > 0)
 						{
 							BattleItem *weapon = rs.weapon;
 							int accuracy = BattleUnit::getFiringAccuracy(BattleActionAttack::GetBeforeShoot(rs.attackType, rs.unit, weapon), _save->getBattleGame()->getMod());
@@ -2639,7 +2638,7 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 
 							bool outOfRange = weapon->getRules()->isOutOfRange(distanceSq);
 
-							if (accuracy > _save->getBattleGame()->getMod()->getMinReactionAccuracy() && !outOfRange)
+							if (accuracy >= reactionFireThreshold && !outOfRange)
 							{
 								spotters.push_back(rs);
 							}
