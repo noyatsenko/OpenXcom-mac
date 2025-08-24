@@ -849,7 +849,7 @@ void Soldier::setLookVariant(int lookVariant)
  * Returns the soldier's rules.
  * @return rule soldier
  */
-RuleSoldier *Soldier::getRules() const
+const RuleSoldier *Soldier::getRules() const
 {
 	return _rules;
 }
@@ -1882,6 +1882,42 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	{
 		_previousTransformations.clear();
 	}
+	else if (!transformationRule->getRemoveTransformations().empty())
+	{
+		// Remove specific transformations and their related bonuses
+		for (const auto& remove_transf : transformationRule->getRemoveTransformations())
+		{
+			int count = 0;
+			auto it1 = _previousTransformations.find(remove_transf);
+			if (it1 != _previousTransformations.end())
+			{
+				count = it1->second;
+				_previousTransformations.erase(remove_transf);
+			}
+			if (count > 0)
+			{
+				const auto* rtRule = mod->getSoldierTransformation(remove_transf, false);
+				if (rtRule)
+				{
+					if (!Mod::isEmptyRuleName(rtRule->getSoldierBonusType()))
+					{
+						auto it2 = _transformationBonuses.find(rtRule->getSoldierBonusType());
+						if (it2 != _transformationBonuses.end())
+						{
+							if (it2->second > count)
+							{
+								it2->second -= count;
+							}
+							else
+							{
+								_transformationBonuses.erase(rtRule->getSoldierBonusType());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Remember the performed transformation (on the source soldier)
 	auto& history = sourceSoldier->getPreviousTransformations();
@@ -2003,6 +2039,22 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 	}
 
 	return statChange;
+}
+
+/**
+ * Checks whether the soldier has a given bonus.
+ * Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+ */
+bool Soldier::hasBonus(const RuleSoldierBonus* bonus) const
+{
+	for (auto* sb : _bonusCache)
+	{
+		if (sb == bonus)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
